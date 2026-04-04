@@ -2,11 +2,28 @@ import { colors } from "@/constants/theme";
 import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import Animated, {
+    SharedValue,
+    useAnimatedStyle,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export function SimpleHeader() {
+interface SimpleHeaderProps {
+    translateY: SharedValue<number>;
+}
+
+export function SimpleHeader({ translateY }: SimpleHeaderProps) {
+    const insets = useSafeAreaInsets();
+
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ translateY: translateY.value }],
+        };
+    });
+
     return (
-        <View style={styles.container}>
-            <View style={styles.content}>
+        <Animated.View style={[styles.container, animatedStyle]}>
+            <View style={[styles.content, { paddingTop: insets.top + 12 }]}>
                 {/* Logo */}
                 <View style={styles.logoContainer}>
                     <View style={styles.logoWrapper}>
@@ -19,19 +36,23 @@ export function SimpleHeader() {
                     <Text style={styles.title}>Kids Shorts</Text>
                 </View>
             </View>
-        </View>
+        </Animated.View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
         backgroundColor: colors.background.primary,
         borderBottomWidth: 1,
         borderBottomColor: "#222",
     },
     content: {
         paddingHorizontal: 16,
-        paddingTop: 12,
         paddingBottom: 12,
     },
     logoContainer: {

@@ -1,11 +1,14 @@
 import { CustomVideoPlayer } from "@/components/CustomVideoPlayer";
 import EmptyState from "@/components/EmptyState";
 import { colors } from "@/constants/theme";
+import { useHeaderVisibility } from "@/contexts/HeaderVisibilityContext.animated";
+import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext.animated";
 import { useKidsShorts } from "@/hooks/useKidsShorts";
 import { useSeenShorts } from "@/hooks/useSeenShorts";
 import { getProgress, saveProgress } from "@/services/progressTracking";
 import { Speech } from "@/types";
 import Constants from "expo-constants";
+import { useFocusEffect } from "expo-router";
 import { VideoPlayer } from "expo-video";
 import React, { useCallback, useRef } from "react";
 import {
@@ -18,6 +21,7 @@ import {
   View,
   ViewToken,
 } from "react-native";
+import { withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -132,9 +136,38 @@ export default function Index() {
   const { shorts, loading, error, hasMore, loadMore, refresh, getStats } = useKidsShorts({
     seenShortIds,
   });
+  const { translateY: tabBarTranslateY, tabBarHeight } = useTabBarVisibility();
+  const { translateY: headerTranslateY, headerHeight } = useHeaderVisibility();
   const [activeIndex, setActiveIndex] = React.useState(0);
   const flatListRef = useRef<FlatList>(null);
   const watchProgressRef = useRef<Map<string, number>>(new Map());
+
+  // Hide tab bar and header when shorts screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      // Hide tab bar by moving it down
+      tabBarTranslateY.value = withTiming(tabBarHeight + 50, {
+        duration: 300,
+      });
+      // Hide header by moving it up
+      headerTranslateY.value = withTiming(-headerHeight, {
+        duration: 300,
+      });
+
+      // Show them back when leaving and pause all videos
+      return () => {
+        tabBarTranslateY.value = withTiming(0, {
+          duration: 300,
+        });
+        headerTranslateY.value = withTiming(0, {
+          duration: 300,
+        });
+
+        // Pause all videos when leaving shorts screen
+        setActiveIndex(-1);
+      };
+    }, [tabBarTranslateY, tabBarHeight, headerTranslateY, headerHeight])
+  );
 
   const handleWatchProgress = useCallback(
     (shortId: string, percentage: number) => {

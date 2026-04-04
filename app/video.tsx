@@ -1,5 +1,6 @@
 import { CustomVideoPlayer } from "@/components/CustomVideoPlayer";
 import { colors } from "@/constants/theme";
+import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext.animated";
 import { getProgress, saveProgress } from "@/services/progressTracking";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,12 +9,12 @@ import { VideoPlayer } from "expo-video";
 import React from "react";
 import {
     ActivityIndicator,
-    Alert,
     AppState,
     StatusBar,
     StyleSheet,
-    View,
+    View
 } from "react-native";
+import { withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function VideoScreen() {
@@ -43,13 +44,23 @@ export default function VideoScreen() {
     const projectId = Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_PROJECT_ID || "69c60b0e001c5ec5e031";
     const videoUrl = `${endpoint}/storage/buckets/video-files/files/${videoId}/view?project=${projectId}`;
 
-    // Tab bar height constant (kids-shorts has tab bar)
-    const tabBarHeight = 68;
+    // Get tab bar visibility context
+    const { translateY: tabBarTranslateY, tabBarHeight } = useTabBarVisibility();
 
-    // Save progress when leaving screen
+    // Hide tab bar when this screen is focused
     useFocusEffect(
         React.useCallback(() => {
+            // Hide tab bar by moving it down
+            tabBarTranslateY.value = withTiming(tabBarHeight + 50, {
+                duration: 300,
+            });
+
             return () => {
+                // Show tab bar when leaving
+                tabBarTranslateY.value = withTiming(0, {
+                    duration: 300,
+                });
+
                 const player = videoRef.current;
                 if (!player) {
                     return;
@@ -69,7 +80,7 @@ export default function VideoScreen() {
                     });
                 }
             };
-        }, []),
+        }, [tabBarTranslateY, tabBarHeight]),
     );
 
     React.useEffect(() => {
@@ -124,7 +135,7 @@ export default function VideoScreen() {
 
         const loadingTimeout = setTimeout(() => {
             setIsLoading(false);
-        }, 5000);
+        }, 3000);
 
         return () => {
             clearTimeout(loadingTimeout);
@@ -199,7 +210,6 @@ export default function VideoScreen() {
                     <CustomVideoPlayer
                         ref={videoRef}
                         videoUrl={videoUrl}
-                        bottomOffset={tabBarHeight}
                         onTimeUpdate={async (currentTime, duration) => {
                             if (duration > 0 && videoDuration !== duration) {
                                 setVideoDuration(duration);
@@ -215,38 +225,6 @@ export default function VideoScreen() {
                                 lastSavedProgressRef.current = currentTime;
                             }
                         }}
-                        onPlayingChange={async (playing) => {
-                            setVideoPlaying(playing);
-
-                            if (!playing && speechId && videoDuration > 0 && videoRef.current) {
-                                try {
-                                    await saveProgress(
-                                        speechId,
-                                        videoRef.current.currentTime,
-                                        videoDuration,
-                                    );
-                                } catch (error) {
-                                    console.error("Error saving progress on pause:", error);
-                                }
-                            }
-                        }}
-                        onReadyForDisplay={() => {
-                            console.log("[VideoScreen] Video ready");
-                            setIsLoading(false);
-                        }}
-                        onError={(error) => {
-                            console.error("[VideoScreen] Video error:", error);
-                            setIsLoading(false);
-                            Alert.alert(
-                                "Video Error",
-                                "Unable to load video. Please check your internet connection.",
-                                [{ text: "OK" }],
-                            );
-                        }}
-                        onLoad={(duration) => {
-                            console.log("[VideoScreen] Video duration:", duration);
-                            setVideoDuration(duration);
-                        }}
                         onEnd={() => {
                             setVideoPlaying(false);
 
@@ -257,6 +235,9 @@ export default function VideoScreen() {
                             }
                         }}
                         initialPosition={initialPosition}
+                        autoPlay={true}
+                        minimal={false}
+                        loop={false}
                     />
 
                     {isLoading && (

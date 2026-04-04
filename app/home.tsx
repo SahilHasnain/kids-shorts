@@ -1,12 +1,13 @@
 import EmptyState from "@/components/EmptyState";
-import { SimpleHeader } from "@/components/SimpleHeader";
 import { VideoCard } from "@/components/VideoCard";
 import { colors } from "@/constants/theme";
+import { useHeaderVisibility } from "@/contexts/HeaderVisibilityContext.animated";
+import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext.animated";
 import { useKidsVideos } from "@/hooks/useKidsVideos";
 import { getProgress } from "@/services/progressTracking";
 import { Speech } from "@/types";
 import Constants from "expo-constants";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
     ActivityIndicator,
@@ -30,6 +31,10 @@ export default function HomeScreen() {
     const { videos, loading, error, hasMore, loadMore, refresh } = useKidsVideos();
     const [progressData, setProgressData] = useState<Record<string, VideoProgress>>({});
 
+    // Get scroll handlers from contexts
+    const { handleScroll: handleTabBarScroll, showTabBar } = useTabBarVisibility();
+    const { handleScroll: handleHeaderScroll, showHeader } = useHeaderVisibility();
+
     // Load progress data
     React.useEffect(() => {
         const loadProgress = async () => {
@@ -47,6 +52,19 @@ export default function HomeScreen() {
             loadProgress();
         }
     }, [videos]);
+
+    // Show header and tab bar when screen is focused
+    useFocusEffect(
+        useCallback(() => {
+            showHeader();
+            showTabBar();
+        }, [showHeader, showTabBar])
+    );
+
+    const handleScroll = (event: any) => {
+        handleTabBarScroll(event);
+        handleHeaderScroll(event);
+    };
 
     const handleVideoPress = (video: Speech) => {
         const endpoint =
@@ -117,8 +135,7 @@ export default function HomeScreen() {
     };
 
     return (
-        <SafeAreaView edges={["top"]} style={styles.container}>
-            <SimpleHeader />
+        <SafeAreaView edges={[]} style={styles.container}>
             <FlatList
                 data={videos}
                 renderItem={renderVideo}
@@ -133,6 +150,8 @@ export default function HomeScreen() {
                     }
                 }}
                 onEndReachedThreshold={0.5}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
                 refreshControl={
                     <RefreshControl
                         refreshing={false}
@@ -157,7 +176,7 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         flexGrow: 1,
-        paddingTop: 12,
+        paddingTop: 72,
         paddingBottom: 120,
     },
     emptyContainer: {
