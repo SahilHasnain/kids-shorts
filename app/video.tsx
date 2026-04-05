@@ -2,7 +2,7 @@ import { CustomVideoPlayer } from "@/components/CustomVideoPlayer";
 import { colors } from "@/constants/theme";
 import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext.animated";
 import { getProgress, saveProgress } from "@/services/progressTracking";
-import Constants from "expo-constants";
+import { config } from "@/config/appwrite";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { VideoPlayer } from "expo-video";
@@ -37,11 +37,7 @@ export default function VideoScreen() {
     const videoId = params.videoId;
     const speechId = params.speechId;
 
-    // Construct Appwrite video URL
-    const endpoint = Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_ENDPOINT || "https://sgp.cloud.appwrite.io/v1";
-    const projectId = Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_PROJECT_ID || "69907afc003b9e3d9152";
-    const bucketId = "69d22086002f376ddbb3"; // Storage bucket ID
-    const videoUrl = `${endpoint}/storage/buckets/${bucketId}/files/${videoId}/view?project=${projectId}`;
+    const videoUrl = `${config.endpoint}/storage/buckets/${config.storageBucketId}/files/${videoId}/view?project=${config.projectId}`;
 
     // Get tab bar visibility context
     const { translateY: tabBarTranslateY, tabBarHeight } = useTabBarVisibility();

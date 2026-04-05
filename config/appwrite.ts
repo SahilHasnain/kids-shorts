@@ -19,6 +19,8 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 
 export const config = {
+  endpoint: frontendConfig.endpoint,
+  projectId: frontendConfig.projectId,
   databaseId: frontendConfig.databaseId,
   videosCollectionId: frontendConfig.videosCollectionId,
   channelsCollectionId: frontendConfig.channelsCollectionId,

@@ -4,10 +4,10 @@
  * Video Download and Upload Script for Kids Shorts
  *
  * This script:
- * 1. Fetches videos from the database that don't have videoId in storage
- * 2. Downloads video using yt-dlp from YouTube
- * 3. Uploads to Appwrite Storage (video-files bucket)
- * 4. Updates database with videoId
+ * 1. Fetches videos from the database that don't have videoId (storage file ID)
+ * 2. Downloads video using yt-dlp from YouTube using youtubeId
+ * 3. Uploads to Appwrite Storage
+ * 4. Updates database videoId field with storage file ID
  *
  * Usage:
  *   node scripts/download-video.js [--limit=10] [--test] [--quality=720]
@@ -181,12 +181,12 @@ function ensureTempDir() {
 /**
  * Download video using yt-dlp
  */
-async function downloadVideo(videoId, title) {
+async function downloadVideo(youtubeId, title) {
   const sanitizedTitle = title.replace(/[^a-z0-9]/gi, "_").substring(0, 50);
-  const outputPath = join(TEMP_DIR, `${videoId}_${sanitizedTitle}.mp4`);
+  const outputPath = join(TEMP_DIR, `${youtubeId}_${sanitizedTitle}.mp4`);
 
   console.log(`  Downloading: ${title}`);
-  console.log(`  Video ID: ${videoId}`);
+  console.log(`  YouTube ID: ${youtubeId}`);
   console.log(`  Target Quality: ${quality}p`);
 
   return new Promise((resolve, reject) => {
@@ -202,7 +202,7 @@ async function downloadVideo(videoId, title) {
       "--no-playlist",
       "-o",
       outputPath,
-      `https://www.youtube.com/watch?v=${videoId}`,
+      `https://www.youtube.com/watch?v=${youtubeId}`,
     ]);
 
     let errorOutput = "";
@@ -237,11 +237,11 @@ async function downloadVideo(videoId, title) {
 /**
  * Upload video file to Appwrite Storage
  */
-async function uploadVideo(filePath, videoId) {
+async function uploadVideo(filePath, youtubeId) {
   console.log(`  Uploading to Appwrite Storage...`);
 
   try {
-    const fileName = `${videoId}.mp4`;
+    const fileName = `${youtubeId}.mp4`;
     const fileSize = statSync(filePath).size;
     const fileSizeMB = (fileSize / 1024 / 1024).toFixed(2);
 
@@ -265,6 +265,16 @@ async function uploadVideo(filePath, videoId) {
 }
 
 /**
+ * Update video document with videoId (storage file ID)
+ */
+async function updateVideoWithVideoId(videoDocId, storageFileId) {
+  await databases.updateDocument(DATABASE_ID, VIDEOS_COLLECTION_ID, videoDocId, {
+    videoId: storageFileId,
+  });
+  console.log(`  ✓ Updated video document with videoId`);
+}
+
+/**
  * Clean up temporary file
  */
 function cleanupTempFile(filePath) {
@@ -279,16 +289,6 @@ function cleanupTempFile(filePath) {
 }
 
 /**
- * Update video document with storage file ID
- */
-async function updateVideoWithFileId(videoDocId, storageFileId) {
-  await databases.updateDocument(DATABASE_ID, VIDEOS_COLLECTION_ID, videoDocId, {
-    videoId: storageFileId,
-  });
-  console.log(`  ✓ Updated video document with storage file ID`);
-}
-
-/**
  * Process a single video
  */
 async function processVideo(video, index, total) {
@@ -298,25 +298,25 @@ async function processVideo(video, index, total) {
   let uploadFilePath = null;
 
   try {
-    // Download video
-    tempFilePath = await downloadVideo(video.videoId, video.title);
+    // Download video using youtubeId
+    tempFilePath = await downloadVideo(video.youtubeId, video.title);
     uploadFilePath = await ensureH264Compatible(tempFilePath);
 
     if (!testMode) {
-      // Upload to Appwrite (generates unique file ID)
-      const storageFileId = await uploadVideo(uploadFilePath, video.videoId);
-      
+      // Upload to Appwrite
+      const storageFileId = await uploadVideo(uploadFilePath, video.youtubeId);
+
       // Update database with storage file ID
-      await updateVideoWithFileId(video.$id, storageFileId);
+      await updateVideoWithVideoId(video.$id, storageFileId);
     } else {
       console.log(`  ℹ️  Test mode: skipping upload`);
     }
 
     console.log(`  ✅ Success!`);
-    return { success: true, videoId: video.videoId };
+    return { success: true, videoId: video.$id };
   } catch (error) {
     console.error(`  ❌ Error: ${error.message}`);
-    return { success: false, videoId: video.videoId, error: error.message };
+    return { success: false, videoId: video.$id, error: error.message };
   } finally {
     if (tempFilePath && !testMode) {
       cleanupTempFile(tempFilePath);
@@ -328,7 +328,7 @@ async function processVideo(video, index, total) {
 }
 
 /**
- * Fetch all videos without uploaded files using pagination
+ * Fetch all videos without videoId (storage file ID) using pagination
  */
 async function fetchAllVideosWithoutFile(userLimit = null, uploadMode = "all", selectedChannelIds = null) {
   const BATCH_SIZE = 100;
@@ -340,6 +340,7 @@ async function fetchAllVideosWithoutFile(userLimit = null, uploadMode = "all", s
 
   while (hasMore) {
     const queries = [
+      Query.isNull("videoId"), // Videos without storage file ID
       Query.limit(BATCH_SIZE),
       Query.offset(offset),
     ];
@@ -351,10 +352,6 @@ async function fetchAllVideosWithoutFile(userLimit = null, uploadMode = "all", s
     );
 
     let batch = response.documents;
-    
-    // Filter out videos that already have videoId (storage file ID) set
-    // When videoId is set, it means the file has been uploaded to storage
-    batch = batch.filter(video => !video.videoId || video.videoId.length < 20);
     
     // Filter by selected channels if specified
     if (selectedChannelIds && selectedChannelIds.length > 0) {

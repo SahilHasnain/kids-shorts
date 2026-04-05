@@ -244,7 +244,8 @@ async function createVideoDocument(databases, video, channelId) {
 
   const document = {
     title: video.title,
-    videoId: video.videoId, // YouTube video ID (will be replaced with storage file ID after upload)
+    youtubeId: video.videoId, // YouTube video ID (permanent)
+    videoId: null, // Storage file ID (set after upload)
     thumbnailUrl: video.thumbnailUrl,
     duration: video.duration,
     uploadDate: video.uploadDate,

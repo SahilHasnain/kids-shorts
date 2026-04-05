@@ -7,7 +7,7 @@ import { useKidsShorts } from "@/hooks/useKidsShorts";
 import { useSeenShorts } from "@/hooks/useSeenShorts";
 import { getProgress, saveProgress } from "@/services/progressTracking";
 import { Speech } from "@/types";
-import Constants from "expo-constants";
+import { config } from "@/config/appwrite";
 import { useFocusEffect } from "expo-router";
 import { VideoPlayer } from "expo-video";
 import React, { useCallback, useRef } from "react";
@@ -38,14 +38,7 @@ const ShortItem = React.memo(({ speech, isActive, onWatchProgress }: ShortItemPr
   const lastSavedProgressRef = React.useRef<number>(0);
   const hasLoadedProgressRef = React.useRef(false);
 
-  const endpoint =
-    Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_ENDPOINT ||
-    "https://sgp.cloud.appwrite.io/v1";
-  const projectId =
-    Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_PROJECT_ID ||
-    "69907afc003b9e3d9152";
-  const bucketId = "69d22086002f376ddbb3"; // Storage bucket ID
-  const videoUrl = `${endpoint}/storage/buckets/${bucketId}/files/${speech.videoId}/view?project=${projectId}`;
+  const videoUrl = `${config.endpoint}/storage/buckets/${config.storageBucketId}/files/${speech.videoId}/view?project=${config.projectId}`;
 
   React.useEffect(() => {
     if (hasLoadedProgressRef.current) return;

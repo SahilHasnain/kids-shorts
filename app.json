@@ -43,9 +43,6 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "extra": {
-      "EXPO_PUBLIC_APPWRITE_ENDPOINT": "https://sgp.cloud.appwrite.io/v1",
-      "EXPO_PUBLIC_APPWRITE_PROJECT_ID": "69c60b0e001c5ec5e031"
-    }
+    "extra": {}
   }
 }
