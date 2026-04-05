@@ -22,8 +22,7 @@ export interface Channel {
   youtubeChannelId: string;
   thumbnailUrl?: string;
   description?: string;
-  type: "channel" | "playlist";
+  type?: "channel" | "playlist";
   ignoreDuration?: boolean;
   includeShorts?: boolean;
-  isKidsChannel?: boolean;
 }

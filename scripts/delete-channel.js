@@ -96,7 +96,7 @@ async function listAllChannels(databases) {
     const response = await databases.listDocuments(
       config.databaseId,
       config.channelsCollectionId,
-      [Query.equal("isKidsChannel", true), Query.limit(100)],
+      [Query.limit(100)],
     );
     return response.documents;
   } catch (error) {

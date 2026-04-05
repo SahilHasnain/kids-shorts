@@ -405,7 +405,7 @@ async function main() {
   const channelsResponse = await databases.listDocuments(
     DATABASE_ID,
     CHANNELS_COLLECTION_ID,
-    [Query.equal("isKidsChannel", true), Query.limit(100)]
+    [Query.limit(100)]
   );
   
   const allChannels = channelsResponse.documents;

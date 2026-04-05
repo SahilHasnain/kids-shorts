@@ -13,29 +13,28 @@ export function useKidsVideos() {
   const [offset, setOffset] = useState(0);
   const [kidsChannelIds, setKidsChannelIds] = useState<string[]>([]);
 
-  // Fetch kids channel IDs
+  // Fetch all source IDs. Legacy documents without a type field are still valid.
   const fetchKidsChannels = useCallback(async () => {
     try {
       const response = await databases.listDocuments(
         config.databaseId,
         config.channelsCollectionId,
-        [Query.equal("isKidsChannel", true)]
+        [Query.limit(100)]
       );
-      
-      const youtubeChannelIds = response.documents.map(doc => doc.youtubeChannelId);
-      console.log(`✅ Found ${youtubeChannelIds.length} kids channels for videos`);
+
+      const youtubeChannelIds = response.documents.map((doc) => doc.youtubeChannelId);
+      console.log(`Found ${youtubeChannelIds.length} source(s) for videos`);
       setKidsChannelIds(youtubeChannelIds);
       return youtubeChannelIds;
     } catch (err) {
-      console.error("Error fetching kids channels:", err);
+      console.error("Error fetching sources:", err);
       return [];
     }
   }, []);
 
-  // Fetch videos (non-shorts)
   const fetchVideos = useCallback(async (channelIds: string[], currentOffset: number = 0) => {
     if (channelIds.length === 0) {
-      console.log("⚠️ No kids channels found");
+      console.log("No sources found");
       setLoading(false);
       return [];
     }
@@ -44,7 +43,7 @@ export function useKidsVideos() {
       setLoading(true);
 
       const queries = [
-        Query.equal("isShort", false), // Exclude shorts from feed
+        Query.equal("isShort", false),
         Query.equal("channelId", channelIds),
         Query.isNotNull("videoId"),
         Query.notEqual("videoId", ""),
@@ -60,11 +59,9 @@ export function useKidsVideos() {
       );
 
       const fetchedVideos = response.documents as unknown as Speech[];
-      console.log(`📦 Fetched ${fetchedVideos.length} videos (offset: ${currentOffset})`);
-
       setHasMore(fetchedVideos.length === VIDEOS_PER_PAGE);
       setError(null);
-      
+
       return fetchedVideos;
     } catch (err) {
       console.error("Error fetching videos:", err);
@@ -75,7 +72,6 @@ export function useKidsVideos() {
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     const initialize = async () => {
       const channelIds = await fetchKidsChannels();
@@ -87,7 +83,6 @@ export function useKidsVideos() {
     initialize();
   }, [fetchKidsChannels, fetchVideos]);
 
-  // Load more videos
   const loadMore = useCallback(async () => {
     if (loading || !hasMore || kidsChannelIds.length === 0) return;
 
@@ -96,7 +91,6 @@ export function useKidsVideos() {
     setOffset((prev) => prev + VIDEOS_PER_PAGE);
   }, [loading, hasMore, kidsChannelIds, offset, fetchVideos]);
 
-  // Refresh videos
   const refresh = useCallback(async () => {
     const channelIds = kidsChannelIds.length > 0 ? kidsChannelIds : await fetchKidsChannels();
     const fetchedVideos = await fetchVideos(channelIds, 0);
