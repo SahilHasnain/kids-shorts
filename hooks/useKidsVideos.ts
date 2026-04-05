@@ -55,7 +55,7 @@ export function useKidsVideos() {
 
       const response = await databases.listDocuments(
         config.databaseId,
-        config.speechesCollectionId,
+        config.videosCollectionId,
         queries
       );
 

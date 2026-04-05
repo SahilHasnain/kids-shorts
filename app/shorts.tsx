@@ -43,8 +43,9 @@ const ShortItem = React.memo(({ speech, isActive, onWatchProgress }: ShortItemPr
     "https://sgp.cloud.appwrite.io/v1";
   const projectId =
     Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_PROJECT_ID ||
-    "69c60b0e001c5ec5e031";
-  const videoUrl = `${endpoint}/storage/buckets/video-files/files/${speech.videoId}/view?project=${projectId}`;
+    "69907afc003b9e3d9152";
+  const bucketId = "69d22086002f376ddbb3"; // Storage bucket ID
+  const videoUrl = `${endpoint}/storage/buckets/${bucketId}/files/${speech.videoId}/view?project=${projectId}`;
 
   React.useEffect(() => {
     if (hasLoadedProgressRef.current) return;

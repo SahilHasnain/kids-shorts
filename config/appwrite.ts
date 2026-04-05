@@ -2,10 +2,11 @@ import { Client, Databases, Storage } from "appwrite";
 
 const frontendConfig = {
   endpoint: "https://sgp.cloud.appwrite.io/v1",
-  projectId: "69c60b0e001c5ec5e031",
-  databaseId: "69c60d540003506ba3cf",
-  speechesCollectionId: "69c60d5700050177d8ff",
-  channelsCollectionId: "69c60d6c002054f70390",
+  projectId: "69907afc003b9e3d9152",
+  databaseId: "69d2206900358e41513d",
+  videosCollectionId: "69d2206b0018425b9cb5",
+  channelsCollectionId: "69d22070003313a4fe51",
+  storageBucketId: "69d22086002f376ddbb3",
 } as const;
 
 const client = new Client();
@@ -19,8 +20,9 @@ export const storage = new Storage(client);
 
 export const config = {
   databaseId: frontendConfig.databaseId,
-  speechesCollectionId: frontendConfig.speechesCollectionId,
+  videosCollectionId: frontendConfig.videosCollectionId,
   channelsCollectionId: frontendConfig.channelsCollectionId,
+  storageBucketId: frontendConfig.storageBucketId,
 };
 
 export default client;

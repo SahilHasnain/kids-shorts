@@ -39,8 +39,9 @@ export default function VideoScreen() {
 
     // Construct Appwrite video URL
     const endpoint = Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_ENDPOINT || "https://sgp.cloud.appwrite.io/v1";
-    const projectId = Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_PROJECT_ID || "69c60b0e001c5ec5e031";
-    const videoUrl = `${endpoint}/storage/buckets/video-files/files/${videoId}/view?project=${projectId}`;
+    const projectId = Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_PROJECT_ID || "69907afc003b9e3d9152";
+    const bucketId = "69d22086002f376ddbb3"; // Storage bucket ID
+    const videoUrl = `${endpoint}/storage/buckets/${bucketId}/files/${videoId}/view?project=${projectId}`;
 
     // Get tab bar visibility context
     const { translateY: tabBarTranslateY, tabBarHeight } = useTabBarVisibility();

@@ -75,7 +75,7 @@ export function useKidsShorts(options: UseKidsShortsOptions = {}) {
       // First, let's check if there are ANY shorts with isShort=true
       const testQuery = await databases.listDocuments(
         config.databaseId,
-        config.speechesCollectionId,
+        config.videosCollectionId,
         [Query.equal("isShort", true), Query.limit(5)]
       );
       console.log(`🧪 Test: Found ${testQuery.total} total shorts with isShort=true`);
@@ -102,7 +102,7 @@ export function useKidsShorts(options: UseKidsShortsOptions = {}) {
 
         const response = await databases.listDocuments(
           config.databaseId,
-          config.speechesCollectionId,
+          config.videosCollectionId,
           queries
         );
 
