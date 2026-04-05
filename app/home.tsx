@@ -6,7 +6,6 @@ import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext.animated
 import { useKidsVideos } from "@/hooks/useKidsVideos";
 import { getProgress } from "@/services/progressTracking";
 import { Speech } from "@/types";
-import Constants from "expo-constants";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
@@ -67,18 +66,10 @@ export default function HomeScreen() {
     };
 
     const handleVideoPress = (video: Speech) => {
-        const endpoint =
-            Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_ENDPOINT ||
-            "https://sgp.cloud.appwrite.io/v1";
-        const projectId =
-            Constants.expoConfig?.extra?.EXPO_PUBLIC_APPWRITE_PROJECT_ID ||
-            "69c60b0e001c5ec5e031";
-        const videoUrl = `${endpoint}/storage/buckets/video-files/files/${video.videoId}/view?project=${projectId}`;
-
         router.push({
             pathname: "/video",
             params: {
-                videoUrl,
+                videoId: video.videoId,
                 title: video.title,
                 speechId: video.$id,
             },

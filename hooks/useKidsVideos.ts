@@ -44,7 +44,7 @@ export function useKidsVideos() {
       setLoading(true);
 
       const queries = [
-        // Query.equal("isShort", false), // Temporarily commented out - fetch all videos including shorts
+        Query.equal("isShort", false), // Exclude shorts from feed
         Query.equal("channelId", channelIds),
         Query.isNotNull("videoId"),
         Query.notEqual("videoId", ""),

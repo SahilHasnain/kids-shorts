@@ -8,7 +8,6 @@ import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { VideoPlayer } from "expo-video";
 import React from "react";
 import {
-    ActivityIndicator,
     AppState,
     StatusBar,
     StyleSheet,
@@ -26,7 +25,6 @@ export default function VideoScreen() {
         speechId?: string;
     }>();
 
-    const [isLoading, setIsLoading] = React.useState(true);
     const [videoPlaying, setVideoPlaying] = React.useState(false);
     const [videoDuration, setVideoDuration] = React.useState(0);
     const [initialPosition, setInitialPosition] = React.useState(0);
@@ -66,18 +64,23 @@ export default function VideoScreen() {
                     return;
                 }
 
-                if (player.playing) {
-                    player.pause();
-                }
+                try {
+                    if (player.playing) {
+                        player.pause();
+                    }
 
-                if (speechIdRef.current && videoDurationRef.current > 0) {
-                    saveProgress(
-                        speechIdRef.current,
-                        player.currentTime,
-                        videoDurationRef.current,
-                    ).catch((error) => {
-                        console.error("Error saving progress on blur:", error);
-                    });
+                    if (speechIdRef.current && videoDurationRef.current > 0) {
+                        saveProgress(
+                            speechIdRef.current,
+                            player.currentTime,
+                            videoDurationRef.current,
+                        ).catch((error) => {
+                            console.error("Error saving progress on blur:", error);
+                        });
+                    }
+                } catch (error) {
+                    // Player already released, ignore
+                    console.log("Player already released on blur");
                 }
             };
         }, [tabBarTranslateY, tabBarHeight]),
@@ -106,18 +109,23 @@ export default function VideoScreen() {
                 return;
             }
 
-            if (player.playing) {
-                player.pause();
-            }
+            try {
+                if (player.playing) {
+                    player.pause();
+                }
 
-            if (speechIdRef.current && videoDurationRef.current > 0) {
-                saveProgress(
-                    speechIdRef.current,
-                    player.currentTime,
-                    videoDurationRef.current,
-                ).catch((error) => {
-                    console.error("Error saving progress on app background:", error);
-                });
+                if (speechIdRef.current && videoDurationRef.current > 0) {
+                    saveProgress(
+                        speechIdRef.current,
+                        player.currentTime,
+                        videoDurationRef.current,
+                    ).catch((error) => {
+                        console.error("Error saving progress on app background:", error);
+                    });
+                }
+            } catch (error) {
+                // Player already released, ignore
+                console.log("Player already released on app background");
             }
         });
 
@@ -125,22 +133,6 @@ export default function VideoScreen() {
             subscription.remove();
         };
     }, []);
-
-    // Load video on mount and autoplay
-    React.useEffect(() => {
-        setIsLoading(true);
-        setVideoPlaying(true);
-        setInitialPosition(0);
-        lastSavedProgressRef.current = 0;
-
-        const loadingTimeout = setTimeout(() => {
-            setIsLoading(false);
-        }, 3000);
-
-        return () => {
-            clearTimeout(loadingTimeout);
-        };
-    }, [videoId]);
 
     // Load saved progress and resume automatically when applicable
     React.useEffect(() => {
@@ -169,19 +161,25 @@ export default function VideoScreen() {
 
     // Cleanup: save progress when screen unmounts
     React.useEffect(() => {
-        const player = videoRef.current;
         return () => {
-            if (speechId && videoDuration > 0 && player) {
-                (async () => {
-                    try {
-                        await saveProgress(speechId, player.currentTime, videoDuration);
-                    } catch (error) {
+            const player = videoRef.current;
+            const currentSpeechId = speechIdRef.current;
+            const currentDuration = videoDurationRef.current;
+
+            if (currentSpeechId && currentDuration > 0 && player) {
+                try {
+                    // Try to access currentTime, but catch if player is already released
+                    const currentTime = player.currentTime;
+                    saveProgress(currentSpeechId, currentTime, currentDuration).catch((error) => {
                         console.error("Error saving progress on unmount:", error);
-                    }
-                })();
+                    });
+                } catch (error) {
+                    // Player already released, ignore
+                    console.log("Player already released on unmount");
+                }
             }
         };
-    }, [speechId, videoDuration]);
+    }, []);
 
     return (
         <>
@@ -239,15 +237,6 @@ export default function VideoScreen() {
                         minimal={false}
                         loop={false}
                     />
-
-                    {isLoading && (
-                        <View className="absolute inset-0 items-center justify-center bg-black">
-                            <ActivityIndicator
-                                size="large"
-                                color={colors.text.primary}
-                            />
-                        </View>
-                    )}
                 </View>
             </SafeAreaView>
         </>
