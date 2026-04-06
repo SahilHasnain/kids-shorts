@@ -68,7 +68,7 @@ export function HeaderVisibilityProvider({
                 if (lastDirection.current !== newDirection) {
                     lastDirection.current = newDirection;
 
-                    const targetPosition = newDirection === "down" ? -headerHeight : 0;
+                    const targetPosition = newDirection === "down" ? -(headerHeight + 20) : 0;
 
                     translateY.value = withTiming(targetPosition, {
                         duration: 300,
