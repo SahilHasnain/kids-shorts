@@ -1,0 +1,94 @@
+name: Android Self Hosted
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_variant:
+        description: App variant to build
+        required: false
+        default: production
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+
+jobs:
+  build-android:
+    runs-on: [self-hosted, linux, x64, android-do]
+    defaults:
+      run:
+        shell: bash
+    env:
+      ANDROID_SDK_ROOT: /opt/android-sdk
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+      APP_VARIANT: ${{ inputs.app_variant || 'production' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: false
+
+      - name: Install dependencies
+        run: |
+          npm ci
+
+      - name: Configure Android SDK path
+        run: |
+          printf "sdk.dir=%s\n" "$ANDROID_SDK_ROOT" > android/local.properties
+
+      - name: Build Android artifact
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ vars.ANDROID_KEYSTORE_PATH || '/home/Sahilhasnain/android-secrets/naat-collection/release.keystore' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          chmod +x ./gradlew
+          if [ "$APP_VARIANT" = "preview" ]; then
+            ./gradlew assembleRelease
+          else
+            ./gradlew bundleRelease
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ env.APP_VARIANT }}-artifact
+          path: |
+            android/app/build/outputs/**/*.aab
+            android/app/build/outputs/**/*.apk
+      - name: Fastlane deploy
+        if: ${{ env.APP_VARIANT == 'production' }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SUPPLY_JSON_KEY: ${{ vars.PLAY_STORE_JSON_KEY_PATH || '/home/Sahilhasnain/android-secrets/play-store-key.json' }}
+          ANDROID_APPLICATION_ID: ${{ vars.ANDROID_APPLICATION_ID || 'com.kidsshorts' }}
+          PLAY_TRACK: ${{ vars.PLAY_TRACK || 'alpha' }}
+          SKIP_ANDROID_BUILD: "true"
+          ANDROID_KEYSTORE_PATH: ${{ vars.ANDROID_KEYSTORE_PATH || '/home/Sahilhasnain/android-secrets/naat-collection/release.keystore' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          bundle install
+          fastlane android deploy
+      - name: Cleanup build artifacts
+        if: always()
+        run: |
+          cd android
+          ./gradlew clean
+          rm -rf ~/.gradle/caches/build-cache-*
+
