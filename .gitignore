@@ -40,7 +40,6 @@ app-example
 
 # generated native folders
 /ios
-/android
 
 temp-video/
 .m4a
