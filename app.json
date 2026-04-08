@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kidsshorts.app"
+      "bundleIdentifier": "com.kidsshorts"
     },
     "android": {
       "versionCode": 1,
